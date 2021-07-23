@@ -71,10 +71,11 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
       
       if case let .iso15693(sTag) = firstTag {
         self.readDataInTag(sTag)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: {
-          self.tableView.reloadData()
-        })
       }
+      
+      DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: {
+        self.tableView.reloadData()
+      })
     }
   }
   
@@ -104,7 +105,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
     
     DispatchQueue.global().sync(execute: readTagWorkItem)
-    DispatchQueue.global().asyncAfter(deadline: .now() + 1, execute: proccessDatas)
+    DispatchQueue.global().asyncAfter(deadline: .now() + 0.5, execute: proccessDatas)
   }
 }
 
