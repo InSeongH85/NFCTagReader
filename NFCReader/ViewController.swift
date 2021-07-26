@@ -9,6 +9,7 @@ import UIKit
 import CoreNFC
 
 class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, NFCTagReaderSessionDelegate{
+  
   @IBOutlet var tableView: UITableView!
   // cell reuse id (cells that scroll out of view can be reused)
   let cellReuseIdentifier = "cell"
@@ -41,6 +42,10 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     session?.begin()
   }
 
+  @IBAction func goToLoan(_ sender: UITableViewCell) {
+    print("SAdfasdsfadSFDSAFFD")
+  }
+  
   func tagReaderSessionDidBecomeActive(_ session: NFCTagReaderSession) {
     self.barcode = ""
   }

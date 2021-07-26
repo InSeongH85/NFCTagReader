@@ -12,7 +12,6 @@ extension ViewController {
   func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
     return self.barcodeSet.count
   }
-  
   func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
     // create a new cell if needed or reuse an old one
     let cell:UITableViewCell = (self.tableView.dequeueReusableCell(withIdentifier: cellReuseIdentifier) as UITableViewCell?)!
@@ -20,7 +19,7 @@ extension ViewController {
     cell.textLabel?.text = self.barcodeSet[indexPath.row]
     return cell
   }
-
+  
   // method to run when table view cell is tapped
   func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
       print("You tapped cell number \(indexPath.row).")
