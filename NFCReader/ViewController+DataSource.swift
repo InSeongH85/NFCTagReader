@@ -12,14 +12,19 @@ extension ViewController {
   func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
     return self.barcodeSet.count
   }
+  
   func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
     // create a new cell if needed or reuse an old one
-    let cell:UITableViewCell = (self.tableView.dequeueReusableCell(withIdentifier: cellReuseIdentifier) as UITableViewCell?)!
-    // set the text from the data model
-    cell.textLabel?.text = self.barcodeSet[indexPath.row]
+    let cell = self.tableView.dequeueReusableCell(withIdentifier: cellReuseIdentifier)!
+    if let cell = cell as? CustomCell {
+      DispatchQueue.main.async {
+        cell.customLabel?.text = self.barcodeSet[indexPath.row]
+        cell.stateLabel?.text = self.currentStatus
+      }
+    }
     return cell
   }
-  
+
   // method to run when table view cell is tapped
   func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
       print("You tapped cell number \(indexPath.row).")
