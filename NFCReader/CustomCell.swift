@@ -16,11 +16,29 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
   @IBOutlet var returnButton: UIButton!
   @IBOutlet var loanButton: UIButton!
 
+  @available(iOS 13.0, *)
+  func startSession() {
+    session = NFCTagReaderSession(pollingOption: .iso15693, delegate: self)
+    session?.alertMessage = "Hold your iPhone near the item to learn more about it."
+    session?.begin()
+  }
   
+  @IBAction func selectReturnButton(_ sender: UIButton) {
+    mode = "RETURN"
+    startSession()
+  }
+  
+  @IBAction func selectLoanButton(_ sender: UIButton) {
+    mode = "LOAN"
+    startSession()
+  }
+  
+  @available(iOS 13.0, *)
   func tagReaderSessionDidBecomeActive(_ session: NFCTagReaderSession) {
     print("tagReaderSessionDidBecomeActive!!! :: \(session)")
   }
   
+  @available(iOS 13.0, *)
   func tagReaderSession(_ session: NFCTagReaderSession, didInvalidateWithError error: Error) {
     print("tagReaderSession With Error !!! :: \(error)")
   }
@@ -44,9 +62,7 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
       }
       
       if case let .iso15693(sTag) = tags.first! {
-        DispatchQueue.main.sync {
-          self.writeAfi(sTag)
-        }
+        self.writeAfi(sTag)
       }
       session.alertMessage = "Complete Write NFC Data."
       session.invalidate()
@@ -77,8 +93,8 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
       self.session?.invalidate()
     }
     
-    DispatchQueue.global(qos: .userInteractive).sync(execute: writeAFI)
-    DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 2, execute: endSession)
+    DispatchQueue.main.sync(execute: writeAFI)
+    DispatchQueue.global(qos: .userInteractive).sync(execute: endSession)
   }
   override func awakeFromNib() {
     super.awakeFromNib()
@@ -88,20 +104,5 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
     super.setSelected(selected, animated: animated)
   }
 
-  func startSession() {
-    session = NFCTagReaderSession(pollingOption: .iso15693, delegate: self)
-    session?.alertMessage = "Hold your iPhone near the item to learn more about it."
-    session?.begin()
-  }
-  
-  @IBAction func selectReturnButton(_ sender: UIButton) {
-    mode = "RETURN"
-    startSession()
-  }
-  
-  @IBAction func selectLoanButton(_ sender: UIButton) {
-    mode = "LOAN"
-    startSession()
-  }
   
 }

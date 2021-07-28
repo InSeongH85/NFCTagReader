@@ -49,6 +49,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
   }
   
+  @available(iOS 13.0, *)
   @IBAction func _beginScanning(_ sender: UIButton) {
     guard NFCTagReaderSession.readingAvailable else {
       showErrorByMessage("This device doesn't support tag scanning.")
@@ -93,12 +94,9 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         session.invalidate()
         return
       }
-      
       if case let .iso15693(sTag) = tags.first! {
+        print(sTag.type.rawValue)
         self.readDataInTag(sTag)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: {
-          self.tableView?.reloadData()
-        })
       }
     }
   }
@@ -124,8 +122,23 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
    https://www.nxp.com/docs/en/data-sheet/SL2S2602.pdf 9.2 Memory organization
    특정 block 만 읽기에는 등록번호가 고정적이지 않다.
    */
-  @available(iOS 13.0, *)
+  @available(iOS 14.0, *)
   func readDataInTag(_ iso15693Tag: NFCISO15693Tag) {
+    
+    let readTagWorkItem = DispatchWorkItem {
+      let uInt8Arr: [UInt8] = [UInt8](0...79)
+      for i in uInt8Arr {
+        iso15693Tag.readSingleBlock(requestFlags: [.highDataRate], blockNumber: i, resultHandler: { (result: Result<Data, Error>) in
+          switch result {
+            case .success(let data):
+              self.barcode.append(String(data: data, encoding: .ascii) ?? "")
+            case .failure(let error):
+              self.showErrorByErroCode(error as! NFCReaderError)
+          }
+        })
+      }
+    }
+    
     let setAfiStatus = DispatchWorkItem {
       var currentAfiStatus: Int!
       iso15693Tag.getSystemInfo(requestFlags: [.highDataRate], resultHandler: { (result: Result<NFCISO15693SystemInfo, Error>) in
@@ -148,20 +161,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
       })
     }
     
-    let readTagWorkItem = DispatchWorkItem {
-      let uInt8Arr: [UInt8] = [UInt8](0...79)
-      for i in uInt8Arr {
-        iso15693Tag.readSingleBlock(requestFlags: [.highDataRate], blockNumber: i, resultHandler: { (result: Result<Data, Error>) in
-          switch result {
-            case .success(let data):
-              self.barcode.append(String(data: data, encoding: .ascii) ?? "")
-            case .failure(let error):
-              self.showErrorByErroCode(error as! NFCReaderError)
-          }
-        })
-      }
-    }
-    
     let proccessDatas = DispatchWorkItem {
       let trimData: String = self.barcode.trimmingCharacters(in: .controlCharacters)
       if trimData.count > 0 {
@@ -172,13 +171,11 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
       }
     }
     DispatchQueue.global().sync(execute: readTagWorkItem)
-    DispatchQueue.global().asyncAfter(deadline: .now() + 1, execute: setAfiStatus)
-    DispatchQueue.global().asyncAfter(deadline: .now() + 2, execute: proccessDatas)
+    DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 1, execute: setAfiStatus)
+    DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 2, execute: proccessDatas)
+    DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: {
+      self.tableView?.reloadData()
+    })
   }
 }
 
-extension Data {
-    var bytes: [UInt8] {
-        return [UInt8](self)
-    }
-}
