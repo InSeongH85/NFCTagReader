@@ -125,46 +125,61 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
         print("modeBytes :: \(modeByte)")
 
         let writeEas = DispatchWorkItem {
-//            print("0x00 :: \(0x00)") //0
-//            print("0x01 :: \(0x01)") // 1
-//            iso15693Tag.select(requestFlags: [.highDataRate], completionHandler: { (error) in
-//                iso15693Tag.customCommand(requestFlags: [.highDataRate, .address], customCommandCode: 0xA2,
-//                                          customRequestParameters: Data([0x01]),
-//                                          resultHandler: { (result: Result<Data, Error>) in
-//                                            switch result {
-//                                                case .success(let data) :
-//                                                    print("Data:: \(data)")
-//                                                case .failure(let error):
-//                                                    print("customCommandError :: \(error)")
-//                                            }
-//                                          })
-//            })
-            
-            
-            iso15693Tag.select(requestFlags: [.highDataRate, .address], completionHandler: {(error: Error?) in
+            iso15693Tag.select(requestFlags: [.highDataRate], completionHandler: { (error) in
                 if error != nil {
-                    print("SELECT ERROR :: \(error)")
-                    self.session?.invalidate(errorMessage: "Error select!")
-                    return
+                    let nfcError: NFCReaderError = error as! NFCReaderError
+                    self.session?.invalidate(errorMessage: "SELECT Error \(nfcError.errorUserInfo)")
                 }
-//                let config: NFCISO15693CustomCommandConfiguration = NFCISO15693CustomCommandConfiguration.init(manufacturerCode: iso15693Tag.icManufacturerCode, customCommandCode: 0xA2, requestParameters: Data([0x01,0x01]), maximumRetries: 3, retryInterval: 2.0)
+                // Using  NFCISO15693CustomCommandConfiguration
+                // Error Domain=NFCError Code=1 "Feature not supported" UserInfo={NSLocalizedDescription=Feature not supported}
+//                let config: NFCISO15693CustomCommandConfiguration = NFCISO15693CustomCommandConfiguration.init(manufacturerCode: iso15693Tag.icManufacturerCode, customCommandCode: 0xB2, requestParameters: Data([0x01]), maximumRetries: 3, retryInterval: 2.0)
 //                iso15693Tag.sendCustomCommand(commandConfiguration: config, completionHandler: { (data: Data, error: Error?) in
 //                    if error != nil {
 //                        print("Error!!! :: \(error)")
 //                    }
 //                    print("!@#!@#@! :: \(data)")
 //                })
-                iso15693Tag.sendRequest(requestFlags: 0x02, commandCode: 0xA2, data: Data([0x01]), resultHandler: { (result: Result<(NFCISO15693ResponseFlag, Data?), Error>) in
+
+                // NOT SET EAS..
+                iso15693Tag.customCommand(requestFlags: [.highDataRate],
+                                          customCommandCode: 0xB2,
+                                          customRequestParameters: Data(bytes: [UInt8(0x01), UInt8(0x01)], count: 2),
+                                          resultHandler: { (result: Result<Data, Error>) in
+
                     switch result {
-                        case .success((let response, let data)):
-                            print("sendRequest :: \(response)")
-                            print(data)
+                        case .success(let data) :
+                            print("Data:: \(data)")
                         case .failure(let error):
-                            print("response :: \(error)")
+                            print("customCommandError :: \(error)")
                     }
-                })
-                
+                  })
             })
+            
+            
+//            iso15693Tag.select(requestFlags: [.highDataRate, .address], completionHandler: {(error: Error?) in
+//                if error != nil {
+//                    print("SELECT ERROR :: \(String(describing: error))")
+//                    self.session?.invalidate(errorMessage: "Error select!")
+//                    return
+//                }
+////                let config: NFCISO15693CustomCommandConfiguration = NFCISO15693CustomCommandConfiguration.init(manufacturerCode: iso15693Tag.icManufacturerCode, customCommandCode: 0xA2, requestParameters: Data([0x01,0x01]), maximumRetries: 3, retryInterval: 2.0)
+////                iso15693Tag.sendCustomCommand(commandConfiguration: config, completionHandler: { (data: Data, error: Error?) in
+////                    if error != nil {
+////                        print("Error!!! :: \(error)")
+////                    }
+////                    print("!@#!@#@! :: \(data)")
+////                })
+//                iso15693Tag.sendRequest(requestFlags: 0x02, commandCode: 0xA2, data: Data([0x00,0x00,0x01]), resultHandler: { (result: Result<(NFCISO15693ResponseFlag, Data?), Error>) in
+//                    switch result {
+//                        case .success((let responseFlag, let data)):
+//                            print("sendRequest :: \(responseFlag)")
+//                            print(data)
+//                        case .failure(let error):
+//                            print("response :: \(error)")
+//                    }
+//                })
+//
+//            })
         }
         
         let endSession = DispatchWorkItem {
@@ -172,7 +187,7 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
             self.session?.invalidate()
         }
         DispatchQueue.main.sync(execute: writeEas)
-        DispatchQueue.global(qos: .userInteractive).async(execute: endSession)
+        DispatchQueue.global().asyncAfter(deadline: .now() + 3, execute: endSession)
     }
     
     // https://www.nxp.com/docs/en/data-sheet/SL2S2602.pdf 9.2 Memory organization
@@ -199,7 +214,7 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
         }
         
         DispatchQueue.main.sync(execute: writeAFI)
-        DispatchQueue.global().async(execute: endSession)
+        DispatchQueue.main.async(execute: endSession)
     }
     override func awakeFromNib() {
         super.awakeFromNib()
