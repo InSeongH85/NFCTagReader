@@ -30,7 +30,7 @@
                                 </items>
                             </navigationBar>
                             <tableView clipsSubviews="YES" contentMode="scaleToFill" fixedFrame="YES" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="xUm-wP-Zmj">
-                                <rect key="frame" x="0.0" y="88" width="414" height="774"/>
+                                <rect key="frame" x="0.0" y="149" width="414" height="713"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                 <prototypes>
@@ -51,7 +51,7 @@
                                                     </connections>
                                                 </button>
                                                 <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" restorationIdentifier="loanButton" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="NAi-Ww-93G">
-                                                    <rect key="frame" x="273" y="-2" width="60" height="53"/>
+                                                    <rect key="frame" x="280" y="-1" width="60" height="53"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <color key="backgroundColor" systemColor="systemYellowColor"/>
                                                     <state key="normal" title="Loan"/>
@@ -60,15 +60,27 @@
                                                     </connections>
                                                 </button>
                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="zQl-Yy-RvA">
-                                                    <rect key="frame" x="20" y="11" width="228" height="29"/>
+                                                    <rect key="frame" x="6" y="0.0" width="196" height="51"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                     <nil key="textColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
+                                                <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="5y5-6T-FbN">
+                                                    <rect key="frame" x="217" y="0.0" width="55" height="51"/>
+                                                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                    <color key="backgroundColor" systemColor="systemPinkColor"/>
+                                                    <state key="normal" title="Clear">
+                                                        <color key="titleColor" systemColor="systemBackgroundColor"/>
+                                                    </state>
+                                                    <connections>
+                                                        <action selector="selectClearButton:" destination="mYG-Nj-OQB" eventType="touchUpInside" id="BQH-wT-9dK"/>
+                                                    </connections>
+                                                </button>
                                             </subviews>
                                         </tableViewCellContentView>
                                         <connections>
+                                            <outlet property="clearButton" destination="5y5-6T-FbN" id="QUD-fw-wOX"/>
                                             <outlet property="customLabel" destination="zQl-Yy-RvA" id="KAT-3x-HAb"/>
                                             <outlet property="loanButton" destination="NAi-Ww-93G" id="WtG-fH-bMV"/>
                                             <outlet property="returnButton" destination="mZk-XR-jzd" id="iz2-2h-Jpp"/>
@@ -79,11 +91,23 @@
                                     <outlet property="dataSource" destination="BYZ-38-t0r" id="O68-sI-4dc"/>
                                 </connections>
                             </tableView>
+                            <segmentedControl opaque="NO" contentMode="scaleToFill" selected="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" segmentControlStyle="plain" selectedSegmentIndex="0" id="q94-X1-D2e">
+                                <rect key="frame" x="0.0" y="103" width="414" height="32"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <segments>
+                                    <segment title="AFI"/>
+                                    <segment title="EAS"/>
+                                </segments>
+                                <connections>
+                                    <action selector="selectedMode:" destination="BYZ-38-t0r" eventType="valueChanged" id="GII-w9-eD7"/>
+                                </connections>
+                            </segmentedControl>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                     </view>
                     <connections>
+                        <outlet property="segmentedControl" destination="q94-X1-D2e" id="uQj-d1-43R"/>
                         <outlet property="tableView" destination="xUm-wP-Zmj" id="eM3-5t-Xd2"/>
                     </connections>
                 </viewController>
@@ -95,6 +119,9 @@
     <resources>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        </systemColor>
+        <systemColor name="systemPinkColor">
+            <color red="1" green="0.17647058823529413" blue="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemTealColor">
             <color red="0.35294117647058826" green="0.78431372549019607" blue="0.98039215686274506" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>

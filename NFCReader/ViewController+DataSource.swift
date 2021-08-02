@@ -18,7 +18,6 @@ extension ViewController {
     if let cell = cell as? CustomCell {
       DispatchQueue.main.async {
         cell.customLabel?.text = self.barcodeSet[indexPath.row]
-        cell.stateLabel?.text = self.currentStatus
       }
     }
     return cell
