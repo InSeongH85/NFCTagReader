@@ -119,6 +119,7 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
         return modeBytes
     }
     
+    // 타이밍....
     @available(iOS 14.0, *)
     func writeEas(_ iso15693Tag: NFCISO15693Tag) {
         let modeByte: UInt8 = getByteByMode(mode: self.mode)
@@ -159,11 +160,13 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
 //                                        }
 //                                      })
 //        })
-            
+    
 
 //        DispatchQueue.global().sync(execute: writeEas)
 //        DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: endSession)
     }
+    
+    
     
     // https://www.nxp.com/docs/en/data-sheet/SL2S2602.pdf 9.2 Memory organization
     // 대출 / 반납 의 상태를 NFC 의 AFI 에 쓴다.
@@ -189,7 +192,7 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
         }
         
         DispatchQueue.main.sync(execute: writeAFI)
-        DispatchQueue.global().async(execute: endSession)
+        DispatchQueue.main.async(execute: endSession)
     }
     override func awakeFromNib() {
         super.awakeFromNib()

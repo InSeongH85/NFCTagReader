@@ -111,7 +111,17 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             }
         }
     }
-    
+    func tagRemovalDetect(_ tag: NFCTag) {
+           self.session?.connect(to: tag) { (error: Error?) in
+               if error != nil || !tag.isAvailable {
+                   self.session?.restartPolling()
+                   return
+               }
+               DispatchQueue.global().asyncAfter(deadline: DispatchTime.now() + .milliseconds(500), execute: {
+                   self.tagRemovalDetect(tag)
+               })
+           }
+       }
     /**
      현재 AFI 상태를 가져온다.
      0x07 - 7 :: 대출가능 ( in stock)
