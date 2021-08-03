@@ -7,32 +7,16 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "55852D69-874C-44D4-9298-DF0CDD60632A"
-            shouldBeEnabled = "No"
+            uuid = "72D981E9-91A0-4A6B-BA9B-6FA44A3CAC59"
+            shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "NFCReader/CustomCell.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "76"
-            endingLineNumber = "76"
-            landmarkName = "tagReaderSession(_:didDetect:)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "62EC0279-EE07-4EEB-92E7-BF3C7FA0F108"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "NFCReader/CustomCell.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "94"
-            endingLineNumber = "94"
-            landmarkName = "getLoanBytes(nfcSecurityMode:)"
+            startingLineNumber = "39"
+            endingLineNumber = "39"
+            landmarkName = "startSession()"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

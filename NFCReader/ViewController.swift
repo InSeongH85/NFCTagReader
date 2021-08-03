@@ -12,7 +12,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     @IBOutlet var segmentedControl: UISegmentedControl!
     @IBOutlet var tableView: UITableView!
     var nfcSecurityMode: NFCSecurityMode = .AFI
-    // cell reuse id (cells that scroll out of view can be reused)
     let cellReuseIdentifier = "customCell"
     var session: NFCTagReaderSession?
     var barcodeSet = [String]()
@@ -84,7 +83,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         if let readerError = error as? NFCReaderError {
             showErrorByErroCode(readerError)
         }
-        self.session = nil
     }
     
     @available(iOS 13.0, *)
@@ -186,7 +184,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             if tmpBarcode.count <= 1 {
                 self.session?.invalidate(errorMessage: "barcode error")
             } else {
-                print("self.currentStatus :: \(self.currentStatus!)")
                 self.barcode = "\(trimData) ::: \(self.currentStatus!)"
                 self.barcode = tmpBarcode[1].trimmingCharacters(in: .controlCharacters)  + "::: \(self.currentStatus!)"
                 self.barcodeSet.append(self.barcode)
