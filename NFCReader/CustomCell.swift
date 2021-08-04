@@ -23,11 +23,10 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
         self.getRootViewController()
     }
     
-    func getRootViewController() -> ViewController? {
+    func getRootViewController() {
         DispatchQueue.main.async {
             self.rootView = (UIApplication.shared.windows.first!.rootViewController as! ViewController)
         }
-        return rootView ?? nil
     }
     
     override func setSelected(_ selected: Bool, animated: Bool) {
@@ -37,8 +36,7 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
     @available(iOS 13.0, *)
     func startSession() {
         if self.rootView != nil {
-            self.nfcSecurityMode = self.getRootViewController()!.nfcSecurityMode
-            print(self.nfcSecurityMode)
+            self.nfcSecurityMode = self.rootView!.nfcSecurityMode
             self.session = NFCTagReaderSession(pollingOption: .iso15693, delegate: self)
             self.session?.alertMessage = "Hold your iPhone near the item."
             self.session?.begin()
@@ -66,7 +64,7 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
     @available(iOS 13.0, *)
     func tagReaderSession(_ session: NFCTagReaderSession, didInvalidateWithError error: Error) {
         if let readerError = error as? NFCReaderError {
-            getRootViewController()?.showErrorByErroCode(readerError)
+            self.rootView!.showErrorByErroCode(readerError)
         }
     }
     
@@ -126,6 +124,16 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
         return modeBytes
     }
     
+    func getClearBytes() -> UInt8 {
+        var modeBytes: UInt8! = 0x00
+        if self.nfcSecurityMode == .AFI {
+            modeBytes = 0x00
+        } else if self.nfcSecurityMode == .EAS {
+            modeBytes = 0xA3
+        }
+        return modeBytes
+    }
+    
     func getByteByMode (mode: String) -> UInt8 {
         var modeBytes: UInt8! = 0xC2
         if mode == "LOAN" {
@@ -133,7 +141,7 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
         } else if mode == "RETURN" {
             modeBytes = getReturnBytes()
         } else if mode == "CLEAR" {
-            modeBytes = 0x00
+            modeBytes = getClearBytes()
         }
         return modeBytes
     }
@@ -148,7 +156,8 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
             if error != nil {
                 self.session?.invalidate(errorMessage: error.debugDescription)
             }
-            iso15693Tag.customCommand(requestFlags: [.highDataRate], customCommandCode: Int(modeByte),
+            iso15693Tag.customCommand(requestFlags: [.highDataRate],
+                                      customCommandCode: Int(modeByte),
                                       customRequestParameters: Data(),
                                       resultHandler: { (result: Result<Data, Error>) in
                                         switch result {
@@ -159,8 +168,7 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
                                                 print("customCommandError :: \(error)")
                                                 self.session?.invalidate(errorMessage: error.localizedDescription)
                                         }
-                                      })
-
+           })
         })
     }
     
