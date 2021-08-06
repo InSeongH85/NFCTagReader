@@ -13,6 +13,7 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
     var session: NFCTagReaderSession?
     var nfcSecurityMode: NFCSecurityMode = .AFI
     var rootView: ViewController?
+    var semaphoreCount: Int = 1
     @IBOutlet var customLabel: UILabel!
     @IBOutlet var returnButton: UIButton!
     @IBOutlet var loanButton: UIButton!
@@ -151,10 +152,19 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
     // 반납 일 시 0xA2 :: 보안 설정
     @available(iOS 14.0, *)
     func writeEas(_ iso15693Tag: NFCISO15693Tag) {
+        let semaphore = DispatchSemaphore(value: self.semaphoreCount)
         let modeByte: UInt8 = getByteByMode(mode: self.mode)
+        DispatchQueue.global().async {
+            self.writeEasWithSemaphore(iso15693Tag, semaphore, modeByte)
+        }
+    }
+    
+    func writeEasWithSemaphore(_ iso15693Tag: NFCISO15693Tag, _ semaphore: DispatchSemaphore, _ modeByte: UInt8) {
+        semaphore.wait()
         iso15693Tag.select(requestFlags: [.highDataRate], completionHandler: { (error: Error?) in
             if error != nil {
-                self.session?.invalidate(errorMessage: error.debugDescription)
+                self.endNFCSessionByFailed(modeByte, semaphore)
+                return
             }
             iso15693Tag.customCommand(requestFlags: [.highDataRate],
                                       customCommandCode: Int(modeByte),
@@ -162,13 +172,11 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
                                       resultHandler: { (result: Result<Data, Error>) in
                                         switch result {
                                             case .success(_) :
-                                                self.session?.alertMessage = "Change \(self.nfcSecurityMode) Flag Success. \(modeByte.toHexString())"
-                                                self.session?.invalidate()
-                                            case .failure(let error):
-                                                print("customCommandError :: \(error)")
-                                                self.session?.invalidate(errorMessage: error.localizedDescription)
+                                                self.endNFCSessionBySuccess(modeByte, semaphore)
+                                            case .failure(_):
+                                                self.endNFCSessionByFailed(modeByte, semaphore)
                                         }
-           })
+                                      })
         })
     }
     
@@ -181,26 +189,36 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
     // 대출상태 초기화 0x00
     @available(iOS 13.0, *)
     func writeAfi(_ iso15693Tag: NFCISO15693Tag) {
+        let semaphore = DispatchSemaphore(value: self.semaphoreCount)
         let modeByte: UInt8 = getByteByMode(mode: self.mode)
-        let writeAFI = DispatchWorkItem {
-            iso15693Tag.writeAFI(requestFlags: .highDataRate,
-                                 afi: modeByte,
-                                 completionHandler: { (error: Error?) in
-                if error != nil {
-                    self.session?.invalidate(errorMessage: "Error. Change \(self.nfcSecurityMode) Flag Failed. \(modeByte.toHexString())")
-                    return
-                }
-            })
+        DispatchQueue.global().async {
+            self.writeAFIWithSemaphore(iso15693Tag, semaphore, modeByte)
         }
-        
-        let endSession = DispatchWorkItem {
-            self.session?.alertMessage = "Change \(self.nfcSecurityMode) Flag Success. \(modeByte.toHexString())"
-            self.session?.invalidate()
-        }
-        
-        DispatchQueue.main.sync(execute: writeAFI)
-        DispatchQueue.main.async(execute: endSession)
     }
+    
+    func writeAFIWithSemaphore(_ iso15693Tag: NFCISO15693Tag, _ semaphore: DispatchSemaphore, _ modeByte: UInt8) {
+        semaphore.wait()
+        iso15693Tag.writeAFI(requestFlags: .highDataRate, afi: modeByte, completionHandler: { (error: Error?) in
+            if error != nil {
+                self.endNFCSessionByFailed(modeByte, semaphore)
+                return
+            } else {
+                self.endNFCSessionBySuccess(modeByte, semaphore)
+            }
+        })
+    }
+    
+    func endNFCSessionByFailed(_ modeByte: UInt8, _ semaphore: DispatchSemaphore) {
+        self.session?.invalidate(errorMessage: "Error. Change \(self.nfcSecurityMode) Flag Failed. \(modeByte.toHexString())")
+        semaphore.signal()
+    }
+    
+    func endNFCSessionBySuccess(_ modeByte: UInt8, _ semaphore: DispatchSemaphore) {
+        self.session?.alertMessage = "Change \(self.nfcSecurityMode) Flag Success. \(modeByte.toHexString())"
+        self.session?.invalidate()
+        semaphore.signal()
+    }
+
 }
 
 extension Data {

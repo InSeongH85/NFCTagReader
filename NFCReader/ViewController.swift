@@ -17,6 +17,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     var barcodeSet = [String]()
     var barcode: String! = ""
     var currentStatus: String! = ""
+    var semaphoreCount: Int = 1
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -105,10 +106,12 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
                 return
             }
             if case let .iso15693(sTag) = tags.first! {
+                print("ISO15693 Tag Found")
                 self.readDataInTag(sTag)
             }
         }
     }
+    
     func tagRemovalDetect(_ tag: NFCTag) {
            self.session?.connect(to: tag) { (error: Error?) in
                if error != nil || !tag.isAvailable {
@@ -143,60 +146,70 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
      */
     @available(iOS 14.0, *)
     func readDataInTag(_ iso15693Tag: NFCISO15693Tag) {
-        
-        let readTagWorkItem = DispatchWorkItem {
-            // bytes 가 모자란 경우에는 block 이 없기때문에 오류 발생됨. tag response error.
-            let uInt8Arr: [UInt8] = [UInt8](0...79)
-            for i in uInt8Arr {
-                iso15693Tag.readSingleBlock(requestFlags: [.highDataRate], blockNumber: i, resultHandler: { (result: Result<Data, Error>) in
-                    switch result {
-                        case .success(let data):
-                            self.barcode.append(String(data: data, encoding: .ascii) ?? "")
-                        case .failure(let error):
-                            self.showErrorByErroCode(error as! NFCReaderError)
-                    }
-                })
-            }
+        DispatchQueue.global().async {
+            let semaphore = DispatchSemaphore(value: self.semaphoreCount)
+            self.setBarcodeByTagData(iso15693Tag, semaphore)
+            self.setAFIStatus(iso15693Tag, semaphore)
+            self.proccessDatas(iso15693Tag, semaphore)
         }
-        
-        let setAfiStatus = DispatchWorkItem {
-            var currentAfiStatus: Int!
-            iso15693Tag.getSystemInfo(requestFlags: [.highDataRate], resultHandler: { (result: Result<NFCISO15693SystemInfo, Error>) in
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: {
+            self.tableView?.reloadData()
+        })
+    }
+    
+    func setBarcodeByTagData(_ iso15693Tag: NFCISO15693Tag, _ semaphore: DispatchSemaphore) {
+        // bytes 가 모자란 경우에는 block 이 없기때문에 오류 발생됨. tag response error.
+        // TODO: SLIX 하위 : 20 , SLIX2: 80
+        semaphore.wait()
+        let uInt8Arr: [UInt8] = [UInt8](0...79)
+        for i in uInt8Arr {
+            iso15693Tag.readSingleBlock(requestFlags: [.highDataRate], blockNumber: i, resultHandler: { (result: Result<Data, Error>) in
                 switch result {
-                    case .success(let sysInfo):
-                        currentAfiStatus = sysInfo.applicationFamilyIdentifier
-                        if currentAfiStatus == 0x07 {
-                            self.currentStatus = "대출가능"
-                        } else if currentAfiStatus == 0xC2 {
-                            self.currentStatus = "대출중"
-                        } else {
-                            self.currentStatus = ""
-                        }
+                    case .success(let data):
+                        self.barcode.append(String(data: data, encoding: .ascii) ?? "")
                     case .failure(let error):
-                        self.session?.invalidate(errorMessage: (error as! NFCReaderError).localizedDescription)
+                        self.showErrorByErroCode(error as! NFCReaderError)
                 }
             })
         }
-        
-        let proccessDatas = DispatchWorkItem {
-            let tmpBarcode: [Substring] = self.barcode.split(separator: "\0")
-            let trimData: String = self.barcode.trimmingCharacters(in: .controlCharacters)
-            if tmpBarcode.count <= 1 {
-                self.session?.invalidate(errorMessage: "barcode error")
-            } else {
-                self.barcode = "\(trimData) ::: \(self.currentStatus!)"
-                self.barcode = tmpBarcode[1].trimmingCharacters(in: .controlCharacters)  + "::: \(self.currentStatus!)"
-                self.barcodeSet.append(self.barcode)
-                self.session?.alertMessage = "Complete read NFC Data."
-                self.session?.invalidate()
+        semaphore.signal()
+    }
+    
+    func setAFIStatus(_ iso15693Tag: NFCISO15693Tag, _ semaphore: DispatchSemaphore) {
+        var currentAfiStatus: Int!
+        semaphore.wait()
+        iso15693Tag.getSystemInfo(requestFlags: [.highDataRate], resultHandler: { (result: Result<NFCISO15693SystemInfo, Error>) in
+            switch result {
+                case .success(let sysInfo):
+                    currentAfiStatus = sysInfo.applicationFamilyIdentifier
+                    if currentAfiStatus == 0x07 {
+                        self.currentStatus = "대출가능"
+                    } else if currentAfiStatus == 0xC2 {
+                        self.currentStatus = "대출중"
+                    } else {
+                        self.currentStatus = "상태없음"
+                    }
+                case .failure(let error):
+                    self.session?.invalidate(errorMessage: (error as! NFCReaderError).localizedDescription)
             }
-        }
-        DispatchQueue.global().sync(execute: readTagWorkItem)
-        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 1, execute: setAfiStatus)
-        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 2, execute: proccessDatas)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: {
-            self.tableView?.reloadData()
+            semaphore.signal()
         })
+    }
+    
+    func proccessDatas(_ iso15693Tag: NFCISO15693Tag, _ semaphore: DispatchSemaphore) {
+        semaphore.wait()
+        let tmpBarcode: [Substring] = self.barcode.split(separator: "\0")
+        let trimData: String = self.barcode.trimmingCharacters(in: .controlCharacters)
+        if tmpBarcode.count <= 1 {
+            self.session?.invalidate(errorMessage: "barcode error")
+        } else {
+            self.barcode = "\(trimData) ::: \(self.currentStatus!)"
+            self.barcode = tmpBarcode[1].trimmingCharacters(in: .controlCharacters)  + "::: \(self.currentStatus!)"
+            self.barcodeSet.append(self.barcode)
+            self.session?.alertMessage = "Complete read NFC Data."
+            self.session?.invalidate()
+        }
+        semaphore.signal()
     }
 }
 
