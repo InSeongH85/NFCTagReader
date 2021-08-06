@@ -106,7 +106,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
                 return
             }
             if case let .iso15693(sTag) = tags.first! {
-                print("ISO15693 Tag Found")
                 self.readDataInTag(sTag)
             }
         }
@@ -150,7 +149,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             let semaphore = DispatchSemaphore(value: self.semaphoreCount)
             self.setBarcodeByTagData(iso15693Tag, semaphore)
             self.setAFIStatus(iso15693Tag, semaphore)
-            self.proccessDatas(iso15693Tag, semaphore)
+            self.proccessDatas(semaphore)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: {
             self.tableView?.reloadData()
@@ -196,7 +195,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         })
     }
     
-    func proccessDatas(_ iso15693Tag: NFCISO15693Tag, _ semaphore: DispatchSemaphore) {
+    func proccessDatas(_ semaphore: DispatchSemaphore) {
         semaphore.wait()
         let tmpBarcode: [Substring] = self.barcode.split(separator: "\0")
         let trimData: String = self.barcode.trimmingCharacters(in: .controlCharacters)
