@@ -18,6 +18,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     var barcode: String! = ""
     var currentStatus: String! = ""
     var semaphoreCount: Int = 1
+    var totalBlocks: Int = 0
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -147,6 +148,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     func readDataInTag(_ iso15693Tag: NFCISO15693Tag) {
         DispatchQueue.global().async {
             let semaphore = DispatchSemaphore(value: self.semaphoreCount)
+            self.setTotalBlocks(iso15693Tag, semaphore)
             self.setBarcodeByTagData(iso15693Tag, semaphore)
             self.setAFIStatus(iso15693Tag, semaphore)
             self.proccessDatas(semaphore)
@@ -156,12 +158,26 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         })
     }
     
+    func setTotalBlocks(_ iso15693Tag: NFCISO15693Tag, _ semaphore: DispatchSemaphore) {
+        semaphore.wait()
+        iso15693Tag.getSystemInfo(requestFlags: [.highDataRate], resultHandler: { (result: Result<NFCISO15693SystemInfo, Error>) in
+            switch result {
+                case .success(let info):
+                    self.totalBlocks = info.totalBlocks
+                    semaphore.signal()
+                case .failure(let error):
+                    self.showErrorByErroCode(error as! NFCReaderError)
+            }
+        })
+    }
+    
     func setBarcodeByTagData(_ iso15693Tag: NFCISO15693Tag, _ semaphore: DispatchSemaphore) {
         // bytes 가 모자란 경우에는 block 이 없기때문에 오류 발생됨. tag response error.
-        // TODO: SLIX 하위 : 20 , SLIX2: 80
+        // TODO: SLIX 하위 : 28 , SLIX2: 80
         semaphore.wait()
-        let uInt8Arr: [UInt8] = [UInt8](0...79)
-        for i in uInt8Arr {
+        let tmpSeq = UInt8.init(self.totalBlocks - 1)
+        let readBlocks: [UInt8] = [UInt8](0...tmpSeq)
+        for i in readBlocks {
             iso15693Tag.readSingleBlock(requestFlags: [.highDataRate], blockNumber: i, resultHandler: { (result: Result<Data, Error>) in
                 switch result {
                     case .success(let data):
