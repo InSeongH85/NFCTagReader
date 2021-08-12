@@ -17,8 +17,9 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     var barcodeSet = [String]()
     var barcode: String = ""
     var currentStatus: String! = ""
-    var semaphoreCount: Int = 1
+    var semaphoreCount: Int = 0
     var totalBlocks: Int = 0
+    var nfcReadMode: String = try! Configuration.value(for: "NFC_READ_MODE")
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -70,6 +71,11 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             showErrorByMessage("This device doesn't support tag scanning.")
             return
         }
+        guard nfcReadMode != "" else {
+            self.session?.invalidate(errorMessage: "Checked read mode.")
+            return
+        }
+        
         session = NFCTagReaderSession(pollingOption: .iso15693, delegate: self)
         session?.alertMessage = "Hold your iPhone near the item."
         session?.begin()
@@ -107,7 +113,12 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
                 return
             }
             if case let .iso15693(sTag) = tags.first! {
-                self.readDataInTag(sTag)
+                if self.nfcReadMode == "BARCODE" {
+                    self.readBarcodeInTag(sTag)
+                } else if self.nfcReadMode == "SERIAL" {
+                    self.readSerialInTag(sTag)
+                }
+                
             }
         }
     }
@@ -123,29 +134,23 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
                })
            }
        }
-    /**
-     현재 AFI 상태를 가져온다.
-     0x07 - 7 :: 대출가능 ( in stock)
-     0XC2 - 194 :: 대출 중 (out of loan)
-     
-     func getCurrentAfiStatus(_ iso15693Tag: NFCISO15693Tag) {
-     iso15693Tag.getSystemInfo(requestFlags: [.highDataRate], resultHandler: { (result: Result<NFCISO15693SystemInfo, Error>) in
-     switch result {
-     case .success(let sysInfo):
-     self.currentAfiStatus = sysInfo.applicationFamilyIdentifier
-     case .failure(let error):
-     self.showErrorByErroCode(error as! NFCReaderError)
-     self.session?.invalidate()
-     }
-     })
-     }   */
     
-    /**
-     https://www.nxp.com/docs/en/data-sheet/SL2S2602.pdf 9.2 Memory organization
-     특정 block 만 읽기에는 등록번호가 고정적이지 않다.
-     */
+    
     @available(iOS 14.0, *)
-    func readDataInTag(_ iso15693Tag: NFCISO15693Tag) {
+    func readSerialInTag(_ iso15693Tag: NFCISO15693Tag) {
+        DispatchQueue.global().async {
+            let semaphore = DispatchSemaphore(value: self.semaphoreCount)
+            self.getSerialNo(iso15693Tag, semaphore)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: {
+            self.tableView?.reloadData()
+        })
+    }
+    
+    // https://www.nxp.com/docs/en/data-sheet/SL2S2602.pdf 9.2 Memory organization
+    // 특정 block 만 읽기에는 등록번호가 고정적이지 않다.
+    @available(iOS 14.0, *)
+    func readBarcodeInTag(_ iso15693Tag: NFCISO15693Tag) {
         DispatchQueue.global().async {
             let semaphore = DispatchSemaphore(value: self.semaphoreCount)
             self.setTotalBlocks(iso15693Tag, semaphore)
@@ -163,6 +168,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         iso15693Tag.getSystemInfo(requestFlags: [.highDataRate], resultHandler: { (result: Result<NFCISO15693SystemInfo, Error>) in
             switch result {
                 case .success(let info):
+                    print(info.totalBlocks)
                     self.totalBlocks = info.totalBlocks
                     semaphore.signal()
                 case .failure(let error):
@@ -171,6 +177,25 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         })
     }
     
+    // NFC_READ_MODE 가 SERIAL 이라면 진행
+    func getSerialNo(_ iso15693Tag: NFCISO15693Tag, _ semaphore: DispatchSemaphore) {
+        semaphore.wait()
+        iso15693Tag.getSystemInfo(requestFlags: [.highDataRate], resultHandler: { (result: Result<NFCISO15693SystemInfo, Error>) in
+            switch result {
+                case .success(let info):
+                    let uuidData: Data = Data([UInt8](info.uniqueIdentifier).reversed())
+                    self.barcode = uuidData.toHexString().removingWhitespaces()
+                    self.barcodeSet.append(self.barcode)
+                    self.session?.alertMessage = "Complete read NFC Data."
+                    self.session?.invalidate()
+                    semaphore.signal()
+                case .failure(let error):
+                    self.showErrorByErroCode(error as! NFCReaderError)
+            }
+        })
+    }
+    
+    // NFC_READ_MODE 가 BARCODE 라면 진행
     func setBarcodeByTagData(_ iso15693Tag: NFCISO15693Tag, _ semaphore: DispatchSemaphore) {
         // bytes 가 모자란 경우에는 block 이 없기때문에 오류 발생됨. tag response error.
         // TODO: SLIX 하위 : 28 , SLIX2: 80
@@ -231,4 +256,26 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         semaphore.signal()
     }
 }
+extension String {
+    func removingWhitespaces() -> String {
+        return components(separatedBy: .whitespaces).joined()
+    }
+}
 
+extension Data {
+    func toHexString() -> String {
+        return map { String(format: "%02hhX ", $0) }.joined()
+    }
+}
+
+extension Int {
+    func toHexString() -> String {
+        return String(format:"%02hhx", self)
+    }
+}
+
+extension UInt8 {
+    func toHexString() -> String {
+        return String(format:"%02hhX", self)
+    }
+}

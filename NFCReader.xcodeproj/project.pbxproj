@@ -15,6 +15,7 @@
 		981BF20C26A15981007DBF11 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 981BF20A26A15981007DBF11 /* LaunchScreen.storyboard */; };
 		9823603726B38A4300F7DB48 /* NFCSecurityMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9823603626B38A4300F7DB48 /* NFCSecurityMode.swift */; };
 		98413A6626AE991F00316702 /* CustomCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98413A6526AE991F00316702 /* CustomCell.swift */; };
+		98C1AD9526C503F4009B7A53 /* Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98C1AD9426C503F4009B7A53 /* Configuration.swift */; };
 		98D5B6D026AA5FE200E4DFC1 /* ViewController+DataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98D5B6CF26AA5FE200E4DFC1 /* ViewController+DataSource.swift */; };
 /* End PBXBuildFile section */
 
@@ -30,6 +31,7 @@
 		981BF21326A16D29007DBF11 /* NFCReader.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NFCReader.entitlements; sourceTree = "<group>"; };
 		9823603626B38A4300F7DB48 /* NFCSecurityMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NFCSecurityMode.swift; sourceTree = "<group>"; };
 		98413A6526AE991F00316702 /* CustomCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomCell.swift; sourceTree = "<group>"; };
+		98C1AD9426C503F4009B7A53 /* Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Configuration.swift; sourceTree = "<group>"; };
 		98D5B6CF26AA5FE200E4DFC1 /* ViewController+DataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ViewController+DataSource.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -74,6 +76,7 @@
 				981BF20826A15981007DBF11 /* Assets.xcassets */,
 				981BF20A26A15981007DBF11 /* LaunchScreen.storyboard */,
 				981BF20D26A15981007DBF11 /* Info.plist */,
+				98C1AD9426C503F4009B7A53 /* Configuration.swift */,
 			);
 			path = NFCReader;
 			sourceTree = "<group>";
@@ -158,6 +161,7 @@
 			files = (
 				9823603726B38A4300F7DB48 /* NFCSecurityMode.swift in Sources */,
 				981BF20426A15981007DBF11 /* ViewController.swift in Sources */,
+				98C1AD9526C503F4009B7A53 /* Configuration.swift in Sources */,
 				981BF20026A15981007DBF11 /* AppDelegate.swift in Sources */,
 				98413A6626AE991F00316702 /* CustomCell.swift in Sources */,
 				981BF20226A15981007DBF11 /* SceneDelegate.swift in Sources */,

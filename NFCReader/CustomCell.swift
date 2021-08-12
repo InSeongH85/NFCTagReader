@@ -220,21 +220,3 @@ class CustomCell: UITableViewCell, NFCTagReaderSessionDelegate {
     }
 
 }
-
-extension Data {
-    func toHexString() -> String {
-        return map { String(format: "%02hhx ", $0) }.joined()
-    }
-}
-
-extension Int {
-    func toHexString() -> String {
-        return String(format:"%02hhx", self)
-    }
-}
-
-extension UInt8 {
-    func toHexString() -> String {
-        return String(format:"%02hhX", self)
-    }
-}
