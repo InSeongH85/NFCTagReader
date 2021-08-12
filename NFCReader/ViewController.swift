@@ -15,7 +15,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     let cellReuseIdentifier = "customCell"
     var session: NFCTagReaderSession?
     var barcodeSet = [String]()
-    var barcode: String! = ""
+    var barcode: String = ""
     var currentStatus: String! = ""
     var semaphoreCount: Int = 1
     var totalBlocks: Int = 0
@@ -150,7 +150,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             let semaphore = DispatchSemaphore(value: self.semaphoreCount)
             self.setTotalBlocks(iso15693Tag, semaphore)
             self.setBarcodeByTagData(iso15693Tag, semaphore)
-            self.setAFIStatus(iso15693Tag, semaphore)
+            self.setCurrentStatus(iso15693Tag, semaphore)
             self.proccessDatas(semaphore)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: {
@@ -190,7 +190,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         semaphore.signal()
     }
     
-    func setAFIStatus(_ iso15693Tag: NFCISO15693Tag, _ semaphore: DispatchSemaphore) {
+    func setCurrentStatus(_ iso15693Tag: NFCISO15693Tag, _ semaphore: DispatchSemaphore) {
         var currentAfiStatus: Int!
         semaphore.wait()
         iso15693Tag.getSystemInfo(requestFlags: [.highDataRate], resultHandler: { (result: Result<NFCISO15693SystemInfo, Error>) in
@@ -211,15 +211,19 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         })
     }
     
+    // ControlCharacters 를 trim 시킨다.
+    func trimmingControlCharacters(_ splitBarcode: Substring) -> String {
+        return splitBarcode.trimmingCharacters(in: .controlCharacters)
+    }
+    
     func proccessDatas(_ semaphore: DispatchSemaphore) {
         semaphore.wait()
         let tmpBarcode: [Substring] = self.barcode.split(separator: "\0")
-        let trimData: String = self.barcode.trimmingCharacters(in: .controlCharacters)
-        if tmpBarcode.count <= 1 {
+        if tmpBarcode.count <= 0 {
             self.session?.invalidate(errorMessage: "barcode error")
         } else {
-            self.barcode = "\(trimData) ::: \(self.currentStatus!)"
-            self.barcode = tmpBarcode[1].trimmingCharacters(in: .controlCharacters)  + "::: \(self.currentStatus!)"
+            self.barcode = tmpBarcode.count == 1 ? trimmingControlCharacters(tmpBarcode[0]) : trimmingControlCharacters(tmpBarcode[1])
+            self.barcode = "\(self.barcode) ::: \(self.currentStatus!)"
             self.barcodeSet.append(self.barcode)
             self.session?.alertMessage = "Complete read NFC Data."
             self.session?.invalidate()
