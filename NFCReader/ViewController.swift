@@ -9,25 +9,37 @@ import UIKit
 import CoreNFC
 
 class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, NFCTagReaderSessionDelegate {
-    @IBOutlet var segmentedControl: UISegmentedControl!
+    @IBOutlet var securitySegmentedControl: UISegmentedControl!
+    @IBOutlet var readSegmentedControl: UISegmentedControl!
     @IBOutlet var tableView: UITableView!
     var nfcSecurityMode: NFCSecurityMode = .AFI
+    var nfcReadMode: NFCReadMode = .BARCODE
     let cellReuseIdentifier = "customCell"
     var session: NFCTagReaderSession?
     var barcodeSet = [String]()
     var barcode: String = ""
     var currentStatus: String! = ""
-    var semaphoreCount: Int = 0
+    var semaphoreCount: Int = 1
     var totalBlocks: Int = 0
-    var nfcReadMode: String = try! Configuration.value(for: "NFC_READ_MODE")
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        segmentedControl.selectedSegmentIndex = 0
+        securitySegmentedControl.selectedSegmentIndex = 0
+        readSegmentedControl.selectedSegmentIndex = 0
     }
     
-    @IBAction func selectedMode(_ sender: UISegmentedControl) {
-        switch segmentedControl.selectedSegmentIndex {
+    @IBAction func selectedReadMode(_ sender: UISegmentedControl) {
+        switch readSegmentedControl.selectedSegmentIndex {
+            case 0:
+                nfcReadMode = .BARCODE
+            case 1:
+                nfcReadMode = .SERIALNO
+            default:
+                nfcReadMode = .BARCODE
+        }
+    }
+    @IBAction func selectedSecurityMode(_ sender: UISegmentedControl) {
+        switch securitySegmentedControl.selectedSegmentIndex {
             case 0:
                 nfcSecurityMode = .AFI
             case 1:
@@ -37,42 +49,10 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         }
     }
     
-    @available(iOS 14.0, *)
-    func showErrorByErroCode(_ readerError: NFCReaderError) {
-        if readerError.code != .readerSessionInvalidationErrorUserCanceled {
-            let alertController = UIAlertController(
-                title: "NFC Tag Not Connected.",
-                message: readerError.localizedDescription,
-                preferredStyle: .alert
-            )
-            alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-            DispatchQueue.main.async {
-                self.present(alertController, animated: true, completion: nil)
-            }
-        }
-    }
-    
-    @available(iOS 13.0, *)
-    func showErrorByMessage(_ errorMessage: String) {
-        let alertController = UIAlertController(
-            title: "Session Invalidated",
-            message: errorMessage,
-            preferredStyle: .alert
-        )
-        alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-        DispatchQueue.main.async {
-            self.present(alertController, animated: true, completion: nil)
-        }
-    }
-    
     @available(iOS 13.0, *)
     @IBAction func _beginScanning(_ sender: UIButton) {
         guard NFCTagReaderSession.readingAvailable else {
             showErrorByMessage("This device doesn't support tag scanning.")
-            return
-        }
-        guard nfcReadMode != "" else {
-            self.session?.invalidate(errorMessage: "Checked read mode.")
             return
         }
         
@@ -113,12 +93,11 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
                 return
             }
             if case let .iso15693(sTag) = tags.first! {
-                if self.nfcReadMode == "BARCODE" {
+                if self.nfcReadMode == .BARCODE {
                     self.readBarcodeInTag(sTag)
-                } else if self.nfcReadMode == "SERIAL" {
+                } else if self.nfcReadMode == .SERIALNO {
                     self.readSerialInTag(sTag)
                 }
-                
             }
         }
     }
@@ -255,6 +234,35 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         }
         semaphore.signal()
     }
+    
+    @available(iOS 14.0, *)
+    func showErrorByErroCode(_ readerError: NFCReaderError) {
+        if readerError.code != .readerSessionInvalidationErrorUserCanceled {
+            let alertController = UIAlertController(
+                title: "NFC Tag Not Connected.",
+                message: readerError.localizedDescription,
+                preferredStyle: .alert
+            )
+            alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+            DispatchQueue.main.async {
+                self.present(alertController, animated: true, completion: nil)
+            }
+        }
+    }
+    
+    @available(iOS 13.0, *)
+    func showErrorByMessage(_ errorMessage: String) {
+        let alertController = UIAlertController(
+            title: "Session Invalidated",
+            message: errorMessage,
+            preferredStyle: .alert
+        )
+        alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        DispatchQueue.main.async {
+            self.present(alertController, animated: true, completion: nil)
+        }
+    }
+    
 }
 extension String {
     func removingWhitespaces() -> String {
